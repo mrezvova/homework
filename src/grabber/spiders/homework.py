@@ -7,13 +7,10 @@ class HomeworkSpider(scrapy.Spider):
     start_urls = ["https://dnevnik2.petersburgedu.ru/schedule"]
 
     def parse(self, response):
-        for reg in response.xpath('/html/body/app-root/div/main/div/page-lessons-container/int-lessons-page/widget-layout-container/int-layout/div/div/div/div/section[1]/int-lessons-schedule-container/domain-schedule/div/div/div[2]/int-day[6]/div/div/int-event[1]'):
+        for reg in response.xpath("//div[@class='schedule-day__lessons']"):
             data = {
-                'name': reg.xpath('div/span[1]/span[1]/span/text()').get(),
-                'nic_handle1': reg.xpath('div/span[1]/span[2]/span[1]/text()').get(),
-                'nic_handle2': reg.xpath('div/span[1]/span[2]/span[2]/text()').get(),
-                'city': reg.xpath('div/span[2]/text()').get(),
-                'website': reg.xpath('div/a/@href').get()
+                'lesson': reg.xpath('div/div[2]/h4/text()').get(),
+                'task': reg.xpath('div/div[3]/div[2]/div/div/text()').get(),
             }
 
             company, created = models.Registrator.objects.get_or_create(name=data['name'])
