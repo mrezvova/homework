@@ -7,15 +7,10 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.10"
-flask = "^3.0.2"
-python-telegram-bot = "^20.7"
-requests = "^2.31.0"
-asyncio = "^3.4.3"
 aiogram = "^3.3.0"
-scrapy = "^2.11.0"
 redis = "^5.0.1"
-aioredis = "^2.0.1"
-datetime = "^5.4"
+requests = "^2.31.0"
+
 
 
 [build-system]
