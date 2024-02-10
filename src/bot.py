@@ -119,13 +119,6 @@ async def cmd_start(message: types.Message, state: FSMContext):
                 if j["files"]:
                     file_url = f'https://dnevnik2.petersburgedu.ru/api/filekit/file/download?p_uuid={j["files"][0]["uuid"]}'
                     await message.answer(f'Прикрепленный файл:{nl}{file_url}{nl}')
-            # if len(i["tasks"]) > 1:
-            #     file_url = f'https://dnevnik2.petersburgedu.ru/api/filekit/file/download?p_uuid={i["tasks"][1]["files"][0]["uuid"]}'
-            #     await message.answer(f'Прикрепленный файл:{nl}{file_url}{nl}')
-            #     if len(i["tasks"]) > 2:
-            #         file_url = f'https://dnevnik2.petersburgedu.ru/api/filekit/file/download?p_uuid={i["tasks"][1]["files"][0]["uuid"]}'
-            #         await message.answer(f'Прикрепленный файл:{nl}{file_url}{nl}')
-
         else:
             await message.answer(f'Предмет: {i["subject_name"]}{nl}Домашнего задания нет (¬‿¬ ){nl}')
 
