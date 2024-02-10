@@ -106,8 +106,8 @@ async def cmd_start(message: types.Message, state: FSMContext):
     person_id = data["person_id"]
     jwt_token = data["jwt_token"]
     today = datetime.today()
-    datem = today.strftime("%d.%m")
-    url_l = f'https://dnevnik2.petersburgedu.ru/api/journal/lesson/list-by-education?p_datetime_from={datem}.2024%2000:00:00&p_datetime_to={datem}.2024%2023:59:59&p_educations%5B%5D={person_id}'
+    datem = today.strftime("%d.%m.%Y")
+    url_l = f'https://dnevnik2.petersburgedu.ru/api/journal/lesson/list-by-education?p_datetime_from={datem}%2000:00:00&p_datetime_to={datem}%2023:59:59&p_educations%5B%5D={person_id}'
     response = requests.post(url_l, data={}, headers=jwt_token)
     response = json.loads(response.text)
 
@@ -115,6 +115,17 @@ async def cmd_start(message: types.Message, state: FSMContext):
     for i in response['data']['items']:
         if i["tasks"]:
             await message.answer(f'Предмет: {i["subject_name"]}{nl}Домашнее задание: {i["tasks"][0]["task_name"]}{nl}')
+            for j in i["tasks"]:
+                if j["files"]:
+                    file_url = f'https://dnevnik2.petersburgedu.ru/api/filekit/file/download?p_uuid={j["files"][0]["uuid"]}'
+                    await message.answer(f'Прикрепленный файл:{nl}{file_url}{nl}')
+            # if len(i["tasks"]) > 1:
+            #     file_url = f'https://dnevnik2.petersburgedu.ru/api/filekit/file/download?p_uuid={i["tasks"][1]["files"][0]["uuid"]}'
+            #     await message.answer(f'Прикрепленный файл:{nl}{file_url}{nl}')
+            #     if len(i["tasks"]) > 2:
+            #         file_url = f'https://dnevnik2.petersburgedu.ru/api/filekit/file/download?p_uuid={i["tasks"][1]["files"][0]["uuid"]}'
+            #         await message.answer(f'Прикрепленный файл:{nl}{file_url}{nl}')
+
         else:
             await message.answer(f'Предмет: {i["subject_name"]}{nl}Домашнего задания нет (¬‿¬ ){nl}')
 
