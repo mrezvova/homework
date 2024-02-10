@@ -52,12 +52,10 @@ async def request_data(message: types.Message, state: FSMContext):
     response_dict = json.loads(res.text)
     token_jwt = response_dict['data']['token']
     token = { 'X-Jwt-Token' : token_jwt}
-    print(token)
     await state.update_data(jwt_token=token)
 
     url_l = f'https://dnevnik2.petersburgedu.ru/api/journal/institution/related-jurisdiction-list?p_page=1'
     response = requests.post(url_l, data={}, headers=token)
-    print(type(response.text))
     first_id = json.loads(response.text)
     first_id = first_id['data']['items'][0]['id']
 
@@ -66,15 +64,14 @@ async def request_data(message: types.Message, state: FSMContext):
     second_id = json.loads(response.text)
     second_id = second_id['data']['items'][0]['id']
 
-
-    url_l = f'https://dnevnik2.petersburgedu.ru/api/journal/group/related-group-list?p_page=1&p_jurisdictions%5B%5D=18&p_institutions%5B%5D={second_id}'
+    url_l = f'https://dnevnik2.petersburgedu.ru/api/journal/group/related-group-list?p_page=1&p_jurisdictions%5B%5D={first_id}&p_institutions%5B%5D={second_id}'
     response = requests.post(url_l, data={}, headers=token)
     group_id = json.loads(response.text)
     group_id = group_id['data']['items'][0]['id']
 
 
-
-    url_l = f'https://dnevnik2.petersburgedu.ru/api/journal/person/related-person-list?p_page=1&p_jurisdictions%5B%5D=18&p_institutions%5B%5D=1519&p_groups%5B%5D={group_id}'
+    
+    url_l = f'https://dnevnik2.petersburgedu.ru/api/journal/person/related-person-list?p_page=1&p_jurisdictions%5B%5D={first_id}&p_institutions%5B%5D={second_id}&p_groups%5B%5D={group_id}'
     response = requests.post(url_l, data={}, headers=token)
     person_id = json.loads(response.text)
     person_id = person_id['data']['items'][0]['educations'][0]['education_id']
