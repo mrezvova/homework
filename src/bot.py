@@ -7,7 +7,7 @@ import json
 from aiogram.fsm.storage.redis import RedisStorage
 from aiogram import Bot, Dispatcher, types, F, Router, html
 from typing import Any, Dict
-from datetime import datetime
+from datetime import datetime, timedelta
 from aiogram.filters.command import Command, CommandStart
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
@@ -40,6 +40,58 @@ dp = Dispatcher(storage=storage)
 # dp = Dispatcher()
 
 #@dp.message(Command("lessons"))
+
+async def get_lessons(state: FSMContext):
+    data = await state.get_data()
+    person_id = data["person_id"]
+    jwt_token = data["jwt_token"]
+    today = datetime.now()
+    if today.isoweekday() % 7 == 6:
+        today = datetime.now() + timedelta(2)
+    else:
+        today = datetime.now() + timedelta(1)
+    
+    datem = today.strftime("%d.%m.%Y")
+    url_l = f'https://dnevnik2.petersburgedu.ru/api/journal/schedule/list-by-education?p_page=1&p_datetime_from={datem}%2000:00:00&p_datetime_to={datem}%2023:59:59&p_educations%5B%5D={person_id}' 
+    response = requests.post(url_l, data={}, headers=jwt_token)
+    response = json.loads(response.text)
+
+    subject_names = list(set([x['subject_name'] for x in response['data']['items']]))
+    Tasks = dict.fromkeys(subject_names,[])
+
+    for i in range(9):
+        today = datetime.now() - timedelta(i)
+        datem = today.strftime("%d.%m.%Y")
+        url_l = f'https://dnevnik2.petersburgedu.ru/api/journal/lesson/list-by-education?p_datetime_from={datem}%2000:00:00&p_datetime_to={datem}%2023:59:59&p_educations%5B%5D={person_id}'
+        response = requests.post(url_l, data={}, headers=jwt_token)
+        response_tasks = json.loads(response.text)
+        subject_names_copy = subject_names.copy()
+
+        url_l = f'https://dnevnik2.petersburgedu.ru/api/journal/schedule/list-by-education?p_page=1&p_datetime_from={datem}%2000:00:00&p_datetime_to={datem}%2023:59:59&p_educations%5B%5D={person_id}'
+        response = requests.post(url_l, data={}, headers=jwt_token)
+        response_schedule = json.loads(response.text)
+        subject_names_copy = subject_names.copy()
+
+        for i in response_schedule['data']['items']:
+            if i['subject_name'] in subject_names:
+                if i['subject_name'] in subject_names_copy:
+                    subject_names_copy.remove(i['subject_name'])
+
+        for i in response_tasks['data']['items']:
+            if i['subject_name'] in subject_names:
+                if i["tasks"]:
+                    current_sub_name = i['subject_name']
+                    Tasks[current_sub_name] = [x for x in Tasks[current_sub_name]] + [i["tasks"][0]["task_name"]]
+                    # for j in i["tasks"]:
+                        # if j["files"]:
+                        #     file_url = f'https://dnevnik2.petersburgedu.ru/api/filekit/file/download?p_uuid={j["files"][0]["uuid"]}'
+                        #     tasks[current_sub_name].append(f'Прикрепленный файл:{nl}{file_url}{nl}')
+                if i['subject_name'] in subject_names_copy:
+                    subject_names_copy.remove(i['subject_name'])
+        subject_names = subject_names_copy
+
+    return Tasks
+
 
 async def request_data(message: types.Message, state: FSMContext):
     data = await state.get_data()
@@ -98,27 +150,16 @@ async def cmd_start(message: types.Message, state: FSMContext):
 
 @dp.message(Command("lessons"))
 async def cmd_start(message: types.Message, state: FSMContext):
-
-    data = await state.get_data()
-    person_id = data["person_id"]
-    jwt_token = data["jwt_token"]
-    today = datetime.today()
-    datem = today.strftime("%d.%m.%Y")
-    url_l = f'https://dnevnik2.petersburgedu.ru/api/journal/lesson/list-by-education?p_datetime_from={datem}%2000:00:00&p_datetime_to={datem}%2023:59:59&p_educations%5B%5D={person_id}'
-    response = requests.post(url_l, data={}, headers=jwt_token)
-    response = json.loads(response.text)
-
+    Tasks = await get_lessons(state=state)
     nl = '\n'
-    for i in response['data']['items']:
-        if i["tasks"]:
-            await message.answer(f'Предмет: {i["subject_name"]}{nl}Домашнее задание: {i["tasks"][0]["task_name"]}{nl}')
-            for j in i["tasks"]:
-                if j["files"]:
-                    file_url = f'https://dnevnik2.petersburgedu.ru/api/filekit/file/download?p_uuid={j["files"][0]["uuid"]}'
-                    await message.answer(f'Прикрепленный файл:{nl}{file_url}{nl}')
+    for k, v in Tasks.items():
+        if len(v) == 0:
+            await message.answer(f'Предмет: {k}{nl}Домашнего задания нет (¬‿¬ ){nl}')
         else:
-            await message.answer(f'Предмет: {i["subject_name"]}{nl}Домашнего задания нет (¬‿¬ ){nl}')
-
+            await message.answer(f'Предмет: {k}{nl}')
+            for i in v:
+                await message.answer(f'Домашнее задание: {i}{nl}')
+        
 
 @dp.message(Command("registration"))
 async def login_step(message: types.Message, state: FSMContext):
