@@ -80,12 +80,18 @@ async def get_lessons(state: FSMContext):
         for i in response_tasks['data']['items']:
             if i['subject_name'] in subject_names:
                 if i["tasks"]:
-                    current_sub_name = i['subject_name']
-                    Tasks[current_sub_name] = [x for x in Tasks[current_sub_name]] + [i["tasks"][0]["task_name"]]
-                    # for j in i["tasks"]:
-                        # if j["files"]:
-                        #     file_url = f'https://dnevnik2.petersburgedu.ru/api/filekit/file/download?p_uuid={j["files"][0]["uuid"]}'
-                        #     tasks[current_sub_name].append(f'Прикрепленный файл:{nl}{file_url}{nl}')
+                    for j in i["tasks"]:
+                        if j['task_name'] != None:
+                            current_sub_name = i['subject_name']
+                            new_tasks = [j["task_name"]]
+                            Tasks[current_sub_name] = [x for x in Tasks[current_sub_name]] + new_tasks
+                        if len(j["files"]) > 0:
+                            nl = '\n'   
+                            url_id = j["files"][0]["uuid"]
+                            file_url = f'https://dnevnik2.petersburgedu.ru/api/filekit/file/download?p_uuid={url_id}'
+                            current_sub_name = i['subject_name']
+                            Tasks[current_sub_name] = [x for x in Tasks[current_sub_name]] + [f'Прикрепленный файл:{nl}{file_url}{nl}']
+
                 if i['subject_name'] in subject_names_copy:
                     subject_names_copy.remove(i['subject_name'])
         subject_names = subject_names_copy
@@ -130,7 +136,6 @@ async def request_data(message: types.Message, state: FSMContext):
 
     await state.update_data(person_id=person_id)
     await message.answer('Чтобы узнать уроки на сегодня, используй команду /lessons')
-    await cmd_start(message=message, state=state)
 
 
 # Хэндлер на команду /start
@@ -153,12 +158,12 @@ async def cmd_start(message: types.Message, state: FSMContext):
     Tasks = await get_lessons(state=state)
     nl = '\n'
     for k, v in Tasks.items():
+        print(k, v)
         if len(v) == 0:
             await message.answer(f'Предмет: {k}{nl}Домашнего задания нет (¬‿¬ ){nl}')
         else:
             await message.answer(f'Предмет: {k}{nl}')
-            for i in v:
-                await message.answer(f'Домашнее задание: {i}{nl}')
+            await message.answer(nl.join(v))
         
 
 @dp.message(Command("registration"))
