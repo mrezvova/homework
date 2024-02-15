@@ -48,6 +48,16 @@ async def get_lessons(state: FSMContext):
     today = datetime.now()
     if today.isoweekday() % 7 == 6:
         today = datetime.now() + timedelta(2)
+    elif today.isoweekday() % 7 == 5:
+        today = datetime.now() + timedelta(1)
+        datem = today.strftime("%d.%m.%Y")
+        url_l = f'https://dnevnik2.petersburgedu.ru/api/journal/schedule/list-by-education?p_page=1&p_datetime_from={datem}%2000:00:00&p_datetime_to={datem}%2023:59:59&p_educations%5B%5D={person_id}' 
+        response = requests.post(url_l, data={}, headers=jwt_token)
+        response = json.loads(response.text)
+        if len(response['data']['items']) == 0:
+            today = datetime.now() + timedelta(3)
+        else:
+            today = datetime.now() + timedelta(1)           
     else:
         today = datetime.now() + timedelta(1)
     
@@ -152,6 +162,12 @@ async def cmd_start(message: types.Message, state: FSMContext):
         resize_keyboard=True,
     )
     await message.answer("Привет! Если ты еще не зашел(а) в свой аккаунт Электронного дневника, то нажми /registration. Если ты уже заходил(а) в свой аккаунт, то нажми /lessons", reply_markup=keyboard)
+
+
+#async def get_lessons(state: FSMContext, ):
+ #   url = "https://api.worldbank.org/v2/en/indicator/NY.GDP.MKTP.CD"
+  #  query_parameters = {"downloadformat": "csv"}
+
 
 @dp.message(Command("lessons"))
 async def cmd_start(message: types.Message, state: FSMContext):
