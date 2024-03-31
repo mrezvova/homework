@@ -40,8 +40,16 @@ dp = Dispatcher(storage=storage)
 # dp = Dispatcher()
 
 #@dp.message(Command("lessons"))
+async def get_date(state: FSMContext):
+    """
+    Retrieves the current date based on the given state.
 
-async def get_lessons(state: FSMContext):
+    Args:
+        state (FSMContext): The state object containing the necessary data.
+
+    Returns:
+        str: The current date in the format "dd.mm.yyyy".
+    """
     data = await state.get_data()
     person_id = data["person_id"]
     jwt_token = data["jwt_token"]
@@ -62,6 +70,23 @@ async def get_lessons(state: FSMContext):
         today = datetime.now() + timedelta(1)
     
     datem = today.strftime("%d.%m.%Y")
+    return datem
+
+async def get_lessons(state: FSMContext):
+    """
+    Retrieves the lessons and tasks for a given state.
+
+    Args:
+        state (FSMContext): The state object containing the necessary data.
+
+    Returns:
+        dict: A dictionary containing the tasks grouped by subject names.
+    """
+    data = await state.get_data()
+    person_id = data["person_id"]
+    jwt_token = data["jwt_token"]
+    
+    datem = await get_date(state=state)
     url_l = f'https://dnevnik2.petersburgedu.ru/api/journal/schedule/list-by-education?p_page=1&p_datetime_from={datem}%2000:00:00&p_datetime_to={datem}%2023:59:59&p_educations%5B%5D={person_id}' 
     response = requests.post(url_l, data={}, headers=jwt_token)
     response = json.loads(response.text)
@@ -110,6 +135,16 @@ async def get_lessons(state: FSMContext):
 
 
 async def request_data(message: types.Message, state: FSMContext):
+    """
+    Sends a series of requests to retrieve data from an API and updates the state with the obtained data.
+
+    Args:
+        message (types.Message): The message object.
+        state (FSMContext): The state object.
+
+    Returns:
+        None
+    """
     data = await state.get_data()
     login = data["login"]
     password = data["password"]
@@ -137,8 +172,6 @@ async def request_data(message: types.Message, state: FSMContext):
     group_id = json.loads(response.text)
     group_id = group_id['data']['items'][0]['id']
 
-
-    
     url_l = f'https://dnevnik2.petersburgedu.ru/api/journal/person/related-person-list?p_page=1&p_jurisdictions%5B%5D={first_id}&p_institutions%5B%5D={second_id}&p_groups%5B%5D={group_id}'
     response = requests.post(url_l, data={}, headers=token)
     person_id = json.loads(response.text)
@@ -151,6 +184,13 @@ async def request_data(message: types.Message, state: FSMContext):
 # Хэндлер на команду /start
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message, state: FSMContext):
+    """
+    Handle the '/start' command.
+    
+    Args:
+        message (types.Message): The message object representing the command message.
+        state (FSMContext): The FSMContext object representing the current state of the conversation.
+    """
     kb = [
         [
             types.KeyboardButton(text="/registration"),
@@ -171,6 +211,16 @@ async def cmd_start(message: types.Message, state: FSMContext):
 
 @dp.message(Command("lessons"))
 async def cmd_start(message: types.Message, state: FSMContext):
+    """
+    Handle the start command.
+
+    Args:
+        message (types.Message): The message object.
+        state (FSMContext): The FSM context.
+
+    Returns:
+        None
+    """
     Tasks = await get_lessons(state=state)
     nl = '\n'
     for k, v in Tasks.items():
